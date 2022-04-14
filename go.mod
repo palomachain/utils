@@ -1,4 +1,4 @@
-module github.com/volumefi/conductor
+module github.com/volumefi/utils
 
 go 1.18
 
