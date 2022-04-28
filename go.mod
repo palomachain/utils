@@ -1,4 +1,4 @@
-module github.com/volumefi/utils
+module github.com/palomachain/utils
 
 go 1.18
 
