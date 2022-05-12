@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // Signer is an interface that can sign byte slice and return a signature and
@@ -31,6 +32,15 @@ func (fnc SignerFnc) Sign(b []byte) ([]byte, error) {
 func KeyringSigner(k keyring.Signer, uid string) SignerFnc {
 	return SignerFnc(func(b []byte) ([]byte, error) {
 		signedBytes, _, err := k.Sign(uid, b)
+		return signedBytes, err
+	})
+}
+
+// KeyringSigner returns a function that implements the Signer interface, which
+// will sign a byte slice given a keyring and a key's address..
+func KeyringSignerByAddress(k keyring.Signer, address sdk.Address) SignerFnc {
+	return SignerFnc(func(b []byte) ([]byte, error) {
+		signedBytes, _, err := k.SignByAddress(address, b)
 		return signedBytes, err
 	})
 }
