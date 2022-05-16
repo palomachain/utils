@@ -7,10 +7,19 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
+const (
+	EncodingDelimiter = byte('|')
+)
+
 // Signer is an interface that can sign byte slice and return a signature and
 // an error back.
 type Signer interface {
 	Sign([]byte) ([]byte, error)
+}
+
+// SignatureVerifier is an interface that can verify a signature given a message.
+type SignatureVerifier interface {
+	VerifySignature(msg []byte, signature []byte) bool
 }
 
 // Serializer takes any object and serializes it in a deterministic way.
@@ -77,20 +86,44 @@ func JsonDeterministicEncoding(msg any) ([]byte, error) {
 // SignBytes takes something that can sign a byte slice, a deterministic
 // serializer, message and a nonce and returns back a signature, message that
 // was used for signing and an error if there was any.
-func SignBytes(s Signer, ser Serializer, msg any, nonce []byte) ([]byte, []byte, error) {
+func SignBytes(s Signer, ser Serializer, msg any, nonce []byte, extra ...[]byte) ([]byte, []byte, error) {
+	msgBytes, err := buildMessage(ser, msg, nonce, extra...)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	signedBytes, err := s.Sign(msgBytes)
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return signedBytes, signedBytes, nil
+}
+
+// VerifySignature verifies the signature that was generated using SignBytes function.
+func VerifySignature(v SignatureVerifier, ser Serializer, signature []byte, msg any, nonce []byte, extra ...[]byte) bool {
+	msgBytes, err := buildMessage(ser, msg, nonce, extra...)
+	if err != nil {
+		return false
+	}
+
+	return v.VerifySignature(msgBytes, signature)
+}
+
+func buildMessage(ser Serializer, msg any, nonce []byte, extra ...[]byte) ([]byte, error) {
 	encodedMsg, err := ser.DeterministicSerialize(msg)
 
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	// appending nonce to the end of the message that needs to be signed
-	msgWithNonce := append(encodedMsg, nonce...)
-
-	signedBytes, err := s.Sign(msgWithNonce)
-	if err != nil {
-		return nil, nil, err
+	msgBytes := append(encodedMsg, nonce...)
+	for _, extraBytes := range extra {
+		msgBytes = append(msgBytes, EncodingDelimiter)
+		msgBytes = append(msgBytes, extraBytes...)
 	}
 
-	return signedBytes, msgWithNonce, nil
+	return msgBytes, nil
 }
