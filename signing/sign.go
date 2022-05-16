@@ -119,10 +119,13 @@ func buildMessage(ser Serializer, msg any, nonce []byte, extra ...[]byte) ([]byt
 	}
 
 	// appending nonce to the end of the message that needs to be signed
-	msgBytes := append(encodedMsg, nonce...)
+	msgBytes := append(encodedMsg, EncodingDelimiter)
+	msgBytes = append(encodedMsg, nonce...)
 	for _, extraBytes := range extra {
-		msgBytes = append(msgBytes, EncodingDelimiter)
-		msgBytes = append(msgBytes, extraBytes...)
+		if extraBytes != nil {
+			msgBytes = append(msgBytes, EncodingDelimiter)
+			msgBytes = append(msgBytes, extraBytes...)
+		}
 	}
 
 	return msgBytes, nil
