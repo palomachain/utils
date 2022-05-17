@@ -62,25 +62,27 @@ func (fnc SerializeFnc) DeterministicSerialize(msg any) ([]byte, error) {
 
 // JsonDeterministicEncoding takes any object and returns back a json serialized object
 // that is deterministic no matter the key ordering.
-func JsonDeterministicEncoding(msg any) ([]byte, error) {
-	// take anything and create a json byte slice
-	js, err := json.Marshal(msg)
-	if err != nil {
-		return nil, err
+func JsonDeterministicEncoding() SerializeFnc {
+	return func(msg any) ([]byte, error) {
+		// take anything and create a json byte slice
+		js, err := json.Marshal(msg)
+		if err != nil {
+			return nil, err
+		}
+		var c any
+		// then unmarshal this back to Go!
+		err = json.Unmarshal(js, &c)
+		if err != nil {
+			return nil, err
+		}
+		// and finally, when calling the marshal on the new unmarshaled data
+		// it will be sorted!
+		js, err = json.Marshal(c)
+		if err != nil {
+			return nil, err
+		}
+		return js, nil
 	}
-	var c any
-	// then unmarshal this back to Go!
-	err = json.Unmarshal(js, &c)
-	if err != nil {
-		return nil, err
-	}
-	// and finally, when calling the marshal on the new unmarshaled data
-	// it will be sorted!
-	js, err = json.Marshal(c)
-	if err != nil {
-		return nil, err
-	}
-	return js, nil
 }
 
 // SignBytes takes something that can sign a byte slice, a deterministic
